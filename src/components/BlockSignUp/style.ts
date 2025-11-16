@@ -26,9 +26,6 @@ export const Credencial = styled.input`
     background-color: ${color.gray};
     border: none;
 
-    :focus {
-        background-color: red;
-    }
 `
 export const ErrorMessage = styled.p`
     color: red;
