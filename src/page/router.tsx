@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { Home } from "./Home";
 import Login from "./Login";
 import Report from "./Report";
+import User from "./User";
 import type { ReactNode } from "react";
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -20,6 +21,14 @@ function AppRouter() {
           element={
             <ProtectedRoute>
               <Home />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/User"
+          element={
+            <ProtectedRoute>
+              <User />
             </ProtectedRoute>
           }
         />
