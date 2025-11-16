@@ -1,7 +1,6 @@
 import * as S from "./style";
 import { useState } from "react";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../firebase";
+import { signUp } from "../../services/login";
 import Title from "../Title";
 
 const BlockSignUp = () => {
@@ -17,7 +16,7 @@ const BlockSignUp = () => {
     }
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await signUp(email, password);
       console.log("Usuário cadastrado:", userCredential.user);
       setError("");
     } catch (err: any) {
