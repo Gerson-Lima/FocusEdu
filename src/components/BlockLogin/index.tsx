@@ -1,53 +1,87 @@
-import * as S from "./style";
 import { useState } from "react";
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../firebase";
-import Title from "../Title";
 
+export default function BlockLogin() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-const BlockLogin = () => {
-    const [email, setEmail] = useState("");
-      const [password, setPassword] = useState("");
-      const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-      const navigate = useNavigate()
+  const handleLogin = async () => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const token = await userCredential.user.getIdToken();
+      localStorage.setItem("token", token);
+      setError("");
+      navigate("/home");
+    } catch (err) {
+      setError("Email ou senha incorreta");
+    }
+  };
 
-      const handleLogin = async () => {
-          try {
-              const userCredential = await signInWithEmailAndPassword(auth, email, password);
-              console.log("Usuário logado:", userCredential.user);
-              const token = await userCredential.user.getIdToken()
-              localStorage.setItem('token', token)
-              setError("");
-              navigate("/home")
-            } catch (err: any) {
-              setError(err.message);
-              console.log(err.mesage)
-            }
-      }
+  return (
+    <div className="flex w-full flex-col items-center gap-4 justify-center">
 
-    return(
-        <S.AreaLogin>
-            <Title title="Login"/>
-            <S.Credencial
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)} />
-            <S.Credencial
-                placeholder="Senha" 
-                value={password}
-                type="password"
-                onChange={(e) => setPassword(e.target.value)}/>
+      <h1 className="text-[24px] text-black font-bold">Login</h1>
 
-            <S.Button onClick={() => handleLogin()}>
-                Entrar
-            </S.Button>
-            {error && <S.ErrorMessage>Email ou senha incorreta</S.ErrorMessage>}
-        </S.AreaLogin>
-    )
+      <input
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        className="
+          w-full
+          text-[16px]
+          p-3
+          rounded-lg
+          bg-[#E5E5E5]
+          focus:bg-white
+          focus:outline-2
+          focus:outline-[#0F172A]
+          focus:outline-offset-2
+        "
+      />
 
+      <input
+        placeholder="Senha"
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        className="
+          w-full
+          text-[16px]
+          p-3
+          rounded-lg
+          bg-[#E5E5E5]
+          focus:bg-white
+          focus:outline-2
+          focus:outline-[#0F172A]
+          focus:outline-offset-2
+        "
+      />
+
+      <button
+        onClick={handleLogin}
+        className="
+          w-full
+          p-3
+          rounded-lg
+          text-[18px]
+          font-bold
+          bg-[#0F172A]
+          text-white
+          cursor-pointer
+          hover:opacity-90
+        "
+      >
+        Entrar
+      </button>
+
+      {error && (
+        <p className="text-red-500 text-[14px]">{error}</p>
+      )}
+    </div>
+  );
 }
-
-
-export default BlockLogin
