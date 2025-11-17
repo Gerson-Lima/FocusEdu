@@ -4,6 +4,7 @@ import styled from '@emotion/styled'
 export const Container = styled.button`
     background-color: ${color.primary};
     border-radius: 12px;
+    padding: 12px 24px;
     border: none;
     align-items: center;
     justify-content: center;

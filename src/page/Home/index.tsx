@@ -6,6 +6,7 @@ import type { ButtonType } from "../../constants/buttons";
 import { Buttons } from "../../constants/buttons";
 import type { ReportItem } from "../../services/reportService";
 import { subscribeReports } from "../../services/reportService";
+import { Link } from "react-router-dom";
 import PopUp from "../../components/PopUp";
 import AddTopicModal from "../../components/AddTopicModal";
 import { auth } from "../../firebase";
@@ -60,7 +61,7 @@ export const Home = () => {
   return (
     <S.Container>
       <Menu active={active} setActive={setActive} />
-      <div style={{ position: "absolute", right: 24, top: 24 }}>
+      <div className="absolute top-8 right-8 flex gap-4">
         <button
           onClick={() => setShowAdd(true)}
           style={{
@@ -74,6 +75,7 @@ export const Home = () => {
         >
           Adicionar novo
         </button>
+      <Link className="bg-gray-500 text-white p-3 rounded" to="../User">Perfil</Link>
       </div>
       <S.AreaBlock>
         {filteredReports.map((item, idx) => (

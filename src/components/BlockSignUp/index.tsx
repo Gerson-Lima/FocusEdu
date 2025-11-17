@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../firebase";
+import { signUp } from "../../services/login";
+import Title from "../Title";
 
 export default function BlockSignUp() {
   const [email, setEmail] = useState("");
@@ -15,21 +17,18 @@ export default function BlockSignUp() {
     }
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
+      // Preferência: usar service signUp da main (centralizado)
+      const userCredential = await signUp(email, password);
+
       console.log("Usuário cadastrado:", userCredential.user);
       setError("");
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message);
     }
   };
 
   return (
     <div className="w-full">
-      
       {/* TÍTULO IGUAL AO LOGIN */}
       <h2 className="text-center text-sm font-bold text-[#1A1A1A] mb-4">
         CADASTRO
