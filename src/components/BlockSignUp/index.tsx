@@ -1,9 +1,10 @@
-import * as S from "./style";
 import { useState } from "react";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../firebase";
 import { signUp } from "../../services/login";
 import Title from "../Title";
 
-const BlockSignUp = () => {
+export default function BlockSignUp() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -16,7 +17,9 @@ const BlockSignUp = () => {
     }
 
     try {
+      // Preferência: usar service signUp da main (centralizado)
       const userCredential = await signUp(email, password);
+
       console.log("Usuário cadastrado:", userCredential.user);
       setError("");
     } catch (err: any) {
@@ -25,37 +28,50 @@ const BlockSignUp = () => {
   };
 
   return (
-    <S.AreaLogin>
-      <Title title="Cadastro" />
+    <div className="w-full">
+      {/* TÍTULO IGUAL AO LOGIN */}
+      <h2 className="text-center text-sm font-bold text-[#1A1A1A] mb-4">
+        CADASTRO
+      </h2>
 
-      <S.Credencial
+      {/* INPUTS IGUAIS AO LOGIN */}
+      <input
         placeholder="Digite seu email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        
+        className="w-full h-10 bg-[#E5E5E5] px-3 rounded-md mb-3 text-sm"
       />
 
-      <S.Credencial
+      <input
         placeholder="Crie uma senha"
+        type="password"
         value={password}
-        type="password"
         onChange={(e) => setPassword(e.target.value)}
+        className="w-full h-10 bg-[#E5E5E5] px-3 rounded-md mb-3 text-sm"
       />
 
-      <S.Credencial
+      <input
         placeholder="Confirmar senha"
-        value={confirmPassword}
         type="password"
+        value={confirmPassword}
         onChange={(e) => setConfirmPassword(e.target.value)}
+        className="w-full h-10 bg-[#E5E5E5] px-3 rounded-md mb-5 text-sm"
       />
 
-      <S.Button onClick={handleSignUp}>
-        Cadastrar
-      </S.Button>
+      {/* BOTÃO IGUAL AO LOGIN */}
+      <button
+        onClick={handleSignUp}
+        className="w-full h-10 bg-[#0B1126] text-white rounded-md text-sm font-semibold hover:opacity-90 transition cursor-pointer"
+      >
+        CADASTRAR
+      </button>
 
-      {error && <S.ErrorMessage>{error}</S.ErrorMessage>}
-    </S.AreaLogin>
+      {/* ERRO IGUAL ESTILO DO PROJETO */}
+      {error && (
+        <p className="text-red-600 text-xs mt-3 font-semibold text-center">
+          {error}
+        </p>
+      )}
+    </div>
   );
-};
-
-export default BlockSignUp;
+}
