@@ -62,7 +62,7 @@ export const Home = () => {
     <S.Container>
       <Menu active={active} setActive={setActive} />
       <div className="absolute top-8 right-8 flex gap-4">
-        {/* <button
+        <button
           onClick={() => setShowAdd(true)}
           style={{
             background: '#2c5728ff',
@@ -74,8 +74,7 @@ export const Home = () => {
           }}
         >
           Adicionar novo
-        </button> */}
-      <button className="bg-gray-500 text-white p-3 rounded">Adicionar</button>
+        </button>
       <Link className="bg-gray-500 text-white p-3 rounded" to="../User">Perfil</Link>
       </div>
       <S.AreaBlock>

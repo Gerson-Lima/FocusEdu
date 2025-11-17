@@ -5,7 +5,6 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential,
 } from "firebase/auth";
-
 // 🔥 Serviços
 import {
   atualizarEmailUsuario,
@@ -66,7 +65,6 @@ export default function User() {
       alert("Senha incorreta. Tente novamente.");
     }
   };
-
   // Confirmar exclusão
   const handleConfirmDelete = async () => {
     try {
