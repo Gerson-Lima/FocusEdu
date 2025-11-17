@@ -5,6 +5,7 @@ export const Container = styled.div<{check: boolean}>`
     width: 95%;
     background-color: ${({check}) => check ? color.primary : color.gray};
     display: flex;
+    margin-top: 6px;
     border: none;
     padding: 8px 12px;
     align-items: center;
