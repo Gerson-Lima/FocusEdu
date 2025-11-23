@@ -7,7 +7,7 @@ export const Container = styled.section`
   display: flex;
   flex-direction: row;
   overflow-y: hidden;
-`
+  background-color: ${color.gray};`
 
 export const AreaBlock = styled.div`
   display: flex;
@@ -19,7 +19,6 @@ export const AreaBlock = styled.div`
   overflow-x: hidden;
   padding: 16px;
   padding-top: 86px;
-  background-color: ${color.gray};
 `
 
 

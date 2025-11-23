@@ -7,6 +7,7 @@ import {
   onAuthStateChanged,
 } from "firebase/auth";
 import { doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { getAuth, updatePassword } from "firebase/auth";
 
 // 🔐 Reautenticar usuário
 export async function reautenticarUsuario(senha: string) {
@@ -35,6 +36,15 @@ export async function atualizarEmailUsuario(novoEmail: string, senha: string) {
     }
     throw new Error("Erro ao solicitar atualização de email.");
   }
+}
+
+export async function atualizarSenhaUsuario(novaSenha: string) {
+  const auth = getAuth();
+  const user = auth.currentUser;
+
+  if (!user) throw new Error("Usuário não encontrado.");
+
+  await updatePassword(user, novaSenha);
 }
 
 // Atualiza Firestore quando o Auth muda de fato (após confirmação do email)

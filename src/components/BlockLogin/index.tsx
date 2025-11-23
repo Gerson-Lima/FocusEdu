@@ -80,7 +80,7 @@ export default function BlockLogin() {
       </button>
 
       {error && (
-        <p className="text-red-500 text-[14px]">{error}</p>
+        <p className="text-red-500 text-[14px]">Email ou senha inadequados</p>
       )}
     </div>
   );

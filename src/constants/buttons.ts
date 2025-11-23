@@ -1,2 +1,2 @@
-export const Buttons = ["Tarefas", "Aulas", "Avaliações"] as const;
+export const Buttons = ["Dashboard", "Minhas Atividades", "Quadro Kanban"] as const;
 export type ButtonType = typeof Buttons[number];

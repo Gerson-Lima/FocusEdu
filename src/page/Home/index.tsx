@@ -65,7 +65,7 @@ export const Home = () => {
         <button
           onClick={() => setShowAdd(true)}
           style={{
-            background: '#2c5728ff',
+            background: '#0F172A',
             color: "white",
             border: 0,
             borderRadius: 8,
@@ -75,7 +75,7 @@ export const Home = () => {
         >
           Adicionar novo
         </button>
-      <Link className="bg-gray-500 text-white p-3 rounded" to="../User">Perfil</Link>
+      <Link className="bg-gray-500 text-white p-3 rounded-full w-12 h-12 text-center" to="../User">P</Link>
       </div>
       <S.AreaBlock>
         {filteredReports.map((item, idx) => (

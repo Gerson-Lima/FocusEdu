@@ -68,8 +68,8 @@ export default function BlockSignUp() {
 
       {/* ERRO IGUAL ESTILO DO PROJETO */}
       {error && (
-        <p className="text-red-600 text-xs mt-3 font-semibold text-center">
-          {error}
+        <p className="text-red-600 text-[14px] mt-3 font-semibold text-center">
+          Email e/ou senha inválidos
         </p>
       )}
     </div>
