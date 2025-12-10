@@ -23,6 +23,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/activities': 'Minhas Atividades',
   '/kanban': 'Quadro Kanban',
   '/history': 'Histórico',
+  '/seguranca': 'Segurança',
 };
 
 export default function Header({ className }: HeaderProps) {
@@ -106,6 +107,12 @@ export default function Header({ className }: HeaderProps) {
                   </p>
                 </div>
               </DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => setLocation('/seguranca')}
+                className="cursor-pointer"
+              >
+               Segurança
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleLogout}
