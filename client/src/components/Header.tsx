@@ -1,4 +1,4 @@
-import { Bell } from 'lucide-react';
+import { Bell, Shield, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -23,7 +23,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/activities': 'Minhas Atividades',
   '/kanban': 'Quadro Kanban',
   '/history': 'Histórico',
-  '/seguranca': 'Segurança',
+  '/security': 'Segurança',
 };
 
 export default function Header({ className }: HeaderProps) {
@@ -99,18 +99,31 @@ export default function Header({ className }: HeaderProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>
+              <DropdownMenuLabel
+              className="cursor-pointer"
+              >
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{userData?.name}</p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    {userData?.email}
-                  </p>
+                    <div className="flex items-center space-x-2">
+                    <Avatar>
+                      <AvatarImage src={userData?.photoURL ?? undefined} alt={userData?.name} />
+                      <AvatarFallback>
+                      {userData?.name ? getInitials(userData.name) : 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p>Meu Perfil</p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                      {userData?.email}
+                      </p>
+                    </div>
+                    </div>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuItem
-                onClick={() => setLocation('/seguranca')}
+                onClick={() => setLocation('/security')}
                 className="cursor-pointer"
               >
+              <Shield />
                Segurança
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -118,6 +131,7 @@ export default function Header({ className }: HeaderProps) {
                 onClick={handleLogout}
                 className="cursor-pointer"
               >
+                <LogOut className="text-black" />
                 Sair
               </DropdownMenuItem>
             </DropdownMenuContent>
