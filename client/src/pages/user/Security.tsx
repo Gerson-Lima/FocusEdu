@@ -106,10 +106,7 @@ export default function Security() {
         <Button className="mt-4 w-30 mr-10 font-bold text-xs" onClick={handleSave}>
           SALVAR
         </Button>
-        <Button
-          className="bg-white text-slate-900 border border-gray w-30 hover:bg-gray-100 font-bold text-xs"
-          onClick={() => setLocation("/dashboard")}
-        >
+        <Button className="bg-white text-slate-900 border border-gray w-30 hover:bg-gray-100 font-bold text-xs" onClick={() => setLocation("/dashboard")}>
           VOLTAR
         </Button>
       </div>

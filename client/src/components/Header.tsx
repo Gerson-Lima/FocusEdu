@@ -24,6 +24,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/kanban': 'Quadro Kanban',
   '/history': 'Histórico',
   '/security': 'Segurança',
+  '/profile': 'Meu Perfil',
 };
 
 export default function Header({ className }: HeaderProps) {
@@ -101,6 +102,7 @@ export default function Header({ className }: HeaderProps) {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel
               className="cursor-pointer"
+              onClick={() => setLocation('/profile')}
               >
                 <div className="flex flex-col space-y-1">
                     <div className="flex items-center space-x-2">

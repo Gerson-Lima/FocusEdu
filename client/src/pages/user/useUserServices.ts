@@ -5,6 +5,7 @@ import {
   verifyBeforeUpdateEmail,
   deleteUser,
   updatePassword,
+  updateProfile,
 } from 'firebase/auth';
 import { doc, deleteDoc } from 'firebase/firestore';
 
@@ -39,6 +40,20 @@ export async function changePassword(newPassword: string) {
   } catch (err: any) {
     if (err.code === 'auth/weak-password') throw new Error('A senha deve ter no minimo 8 caracteres.');
     throw new Error('Erro ao atualizar senha.');
+  }
+}
+
+export async function changeName(newName: string) {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Usuario nao autenticado.');
+
+  try {
+    const ref = doc(db, 'users', user.uid);
+    await deleteDoc(ref);
+    await updateProfile(user, { displayName: newName });
+    return true;
+  } catch (err: any) {
+    throw new Error('Erro ao atualizar nome.');
   }
 }
 
