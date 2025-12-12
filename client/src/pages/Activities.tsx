@@ -121,7 +121,10 @@ function getTodayMidnight(): number {
   return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 }
 
-function normalizeStatusByDueDate(status: ActivityStatus, dueDate: number): ActivityStatus {
+function normalizeStatusByDueDate(
+  status: ActivityStatus,
+  dueDate: number
+): ActivityStatus {
   if (status === "concluida") return "concluida";
 
   const today = getTodayMidnight();
@@ -144,7 +147,11 @@ function buildLocalDateTimestamp(dateStr: string): number {
  * - se existir item para a activity, move
  * - se não existir, cria no final da coluna
  */
-async function syncKanbanWithStatus(userId: string, activityId: string, status: ActivityStatus) {
+async function syncKanbanWithStatus(
+  userId: string,
+  activityId: string,
+  status: ActivityStatus
+) {
   try {
     const colsSnap = await getDocs(
       query(kanbanColumnsCollection, where("userId", "==", userId))
@@ -157,9 +164,13 @@ async function syncKanbanWithStatus(userId: string, activityId: string, status: 
       const t = title.trim().toLowerCase();
 
       const isPorFazer = t === "por fazer" && status === "nao_iniciada";
-      const isEmAndamento = (t === "em andamento" || t === "pendente") && status === "pendente";
-      const isEmAtraso = (t === "em atraso" || t === "atraso" || t === "atrasada") && status === "atrasada";
-      const isConcluido = (t === "concluído" || t === "concluido") && status === "concluida";
+      const isEmAndamento =
+        (t === "em andamento" || t === "pendente") && status === "pendente";
+      const isEmAtraso =
+        (t === "em atraso" || t === "atraso" || t === "atrasada") &&
+        status === "atrasada";
+      const isConcluido =
+        (t === "concluído" || t === "concluido") && status === "concluida";
 
       if (isPorFazer || isEmAndamento || isEmAtraso || isConcluido) {
         targetColumnId = d.id;
@@ -219,6 +230,8 @@ export default function Activities() {
   const [filterCourse, setFilterCourse] = useState<string>("all");
   const [filterCategory, setFilterCategory] = useState<string>("all");
 
+  const [isSaving, setIsSaving] = useState(false);
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -246,7 +259,9 @@ export default function Activities() {
 
   const filteredActivities = useMemo(() => {
     return activities.filter((activity) => {
-      const matchesSearch = activity.title.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = activity.title
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
       const matchesStatus = filterStatus === "all" || activity.status === filterStatus;
       const matchesCourse = filterCourse === "all" || activity.courseId === filterCourse;
       const matchesCategory = filterCategory === "all" || activity.category === filterCategory;
@@ -256,6 +271,8 @@ export default function Activities() {
   }, [activities, searchTerm, filterStatus, filterCourse, filterCategory]);
 
   const handleOpenDialog = (activity?: Activity) => {
+    if (isSaving) return;
+
     if (activity) {
       setEditingActivity(activity);
       setFormData({
@@ -287,11 +304,14 @@ export default function Activities() {
   };
 
   const handleCloseDialog = () => {
+    if (isSaving) return;
     setIsDialogOpen(false);
     setEditingActivity(null);
   };
 
   const handleAddTag = () => {
+    if (isSaving) return;
+
     const label = tagInput.label.trim();
     if (!label) return;
 
@@ -306,13 +326,16 @@ export default function Activities() {
   };
 
   const handleRemoveTag = (id: string) => {
+    if (isSaving) return;
     setFormData((prev) => ({ ...prev, tags: prev.tags.filter((t) => t.id !== id) }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
+    if (isSaving) return;
 
+    setIsSaving(true);
     try {
       // validação mínima
       if (!formData.title || !formData.title.trim()) {
@@ -358,23 +381,29 @@ export default function Activities() {
       }
 
       refreshData();
-      handleCloseDialog();
+      setIsDialogOpen(false);
+      setEditingActivity(null);
     } catch (error: any) {
       console.error("Erro ao salvar atividade:", error);
       const errorMessage = error?.message || "Erro ao salvar atividade";
       toast.error(errorMessage, { duration: 6000 });
       if (errorMessage.includes("permissão") || errorMessage.includes("permission")) {
-        toast.error("Configure as regras do Firestore. Veja FIRESTORE_SETUP.md", { duration: 8000 });
+        toast.error("Configure as regras do Firestore. Veja FIRESTORE_SETUP.md", {
+          duration: 8000,
+        });
       }
       if (errorMessage.includes("ERR_BLOCKED_BY_CLIENT") || errorMessage.includes("conexão")) {
         toast.error("Verifique se há extensões bloqueando o Firebase ou problemas de conexão", {
           duration: 5000,
         });
       }
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDelete = async (activityId: string) => {
+    if (isSaving) return;
     if (!confirm("Tem certeza que deseja excluir esta atividade?")) return;
 
     try {
@@ -389,6 +418,7 @@ export default function Activities() {
 
   const handleStatusChange = async (activity: Activity, newStatus: ActivityStatus) => {
     if (!currentUser) return;
+    if (isSaving) return;
 
     try {
       const finalStatus = normalizeStatusByDueDate(newStatus, activity.dueDate);
@@ -411,6 +441,7 @@ export default function Activities() {
 
   const handlePriorityChange = async (activity: Activity, newPriority: ActivityPriority) => {
     if (!currentUser) return;
+    if (isSaving) return;
 
     try {
       await fbUpdateActivity(activity.id, { priority: newPriority });
@@ -503,7 +534,7 @@ export default function Activities() {
               </div>
 
               <div className="flex justify-end md:justify-start">
-                <Button onClick={() => handleOpenDialog()}>
+                <Button onClick={() => handleOpenDialog()} disabled={isSaving}>
                   <Plus className="h-4 w-4 mr-2" />
                   Nova Atividade
                 </Button>
@@ -543,14 +574,17 @@ export default function Activities() {
 
                   <TableBody>
                     {filteredActivities.map((activity) => {
-                      const disciplineName = activity.courseName || activity.courseId || "Sem disciplina";
+                      const disciplineName =
+                        activity.courseName || activity.courseId || "Sem disciplina";
                       const priority = (activity.priority ?? "media") as ActivityPriority;
                       const tags = (activity.tags ?? []) as ActivityTag[];
 
                       return (
                         <TableRow key={activity.id}>
                           <TableCell>
-                            <div className="font-medium max-w-[220px] truncate">{activity.title}</div>
+                            <div className="font-medium max-w-[220px] truncate">
+                              {activity.title}
+                            </div>
                           </TableCell>
 
                           <TableCell>
@@ -558,7 +592,9 @@ export default function Activities() {
                           </TableCell>
 
                           <TableCell className="w-[140px]">
-                            <div className="truncate">{CATEGORY_LABELS[activity.category]}</div>
+                            <div className="truncate">
+                              {CATEGORY_LABELS[activity.category]}
+                            </div>
                           </TableCell>
 
                           <TableCell>
@@ -588,10 +624,15 @@ export default function Activities() {
                           <TableCell>
                             <Select
                               value={priority}
-                              onValueChange={(value) => handlePriorityChange(activity, value as ActivityPriority)}
+                              onValueChange={(value) =>
+                                handlePriorityChange(activity, value as ActivityPriority)
+                              }
+                              disabled={isSaving}
                             >
                               <SelectTrigger className="w-28">
-                                <Badge className={PRIORITY_COLORS[priority]}>{PRIORITY_LABELS[priority]}</Badge>
+                                <Badge className={PRIORITY_COLORS[priority]}>
+                                  {PRIORITY_LABELS[priority]}
+                                </Badge>
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="alta">Alta</SelectItem>
@@ -604,7 +645,10 @@ export default function Activities() {
                           <TableCell>
                             <Select
                               value={activity.status}
-                              onValueChange={(value) => handleStatusChange(activity, value as ActivityStatus)}
+                              onValueChange={(value) =>
+                                handleStatusChange(activity, value as ActivityStatus)
+                              }
+                              disabled={isSaving}
                             >
                               <SelectTrigger className="min-w-[160px]">
                                 <Badge className={STATUS_COLORS[activity.status]}>
@@ -620,14 +664,26 @@ export default function Activities() {
                             </Select>
                           </TableCell>
 
-                          <TableCell>{format(new Date(activity.dueDate), "dd/MM/yyyy")}</TableCell>
+                          <TableCell>
+                            {format(new Date(activity.dueDate), "dd/MM/yyyy")}
+                          </TableCell>
 
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
-                              <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(activity)}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleOpenDialog(activity)}
+                                disabled={isSaving}
+                              >
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" onClick={() => handleDelete(activity.id)}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(activity.id)}
+                                disabled={isSaving}
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
@@ -644,10 +700,19 @@ export default function Activities() {
       </div>
 
       {/* Dialog criar/editar */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog
+        open={isDialogOpen}
+        onOpenChange={(open) => {
+          if (isSaving) return; // não deixa fechar por overlay/ESC enquanto salva
+          setIsDialogOpen(open);
+          if (!open) setEditingActivity(null);
+        }}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingActivity ? "Editar Atividade" : "Nova Atividade"}</DialogTitle>
+            <DialogTitle>
+              {editingActivity ? "Editar Atividade" : "Nova Atividade"}
+            </DialogTitle>
             <DialogDescription>Preencha os dados da atividade</DialogDescription>
           </DialogHeader>
 
@@ -659,6 +724,7 @@ export default function Activities() {
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 required
+                disabled={isSaving}
               />
             </div>
 
@@ -667,8 +733,11 @@ export default function Activities() {
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 rows={3}
+                disabled={isSaving}
               />
             </div>
 
@@ -679,11 +748,14 @@ export default function Activities() {
                 placeholder="Digite o nome da disciplina (opcional)"
                 value={formData.courseId}
                 onChange={(e) => setFormData({ ...formData, courseId: e.target.value })}
+                disabled={isSaving}
               />
 
               {disciplineTemplates.length > 0 && (
                 <div className="mt-1 space-y-1">
-                  <p className="text-[11px] text-muted-foreground">Sugestões de disciplinas já usadas:</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Sugestões de disciplinas já usadas:
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {disciplineTemplates
                       .filter((name) =>
@@ -696,8 +768,9 @@ export default function Activities() {
                         <button
                           key={name}
                           type="button"
+                          disabled={isSaving}
                           onClick={() => setFormData({ ...formData, courseId: name })}
-                          className="px-2 py-1 text-xs rounded-full border border-slate-300 bg-slate-50 hover:bg-slate-100 transition-colors"
+                          className="px-2 py-1 text-xs rounded-full border border-slate-300 bg-slate-50 hover:bg-slate-100 transition-colors disabled:opacity-50"
                         >
                           {name}
                         </button>
@@ -714,20 +787,26 @@ export default function Activities() {
                 <Input
                   placeholder="Nome da tag"
                   value={tagInput.label}
-                  onChange={(e) => setTagInput((prev) => ({ ...prev, label: e.target.value }))}
+                  onChange={(e) =>
+                    setTagInput((prev) => ({ ...prev, label: e.target.value }))
+                  }
                   className="flex-1 min-w-[140px]"
+                  disabled={isSaving}
                 />
                 <input
                   type="color"
                   value={tagInput.color}
-                  onChange={(e) => setTagInput((prev) => ({ ...prev, color: e.target.value }))}
-                  className="h-9 w-9 p-0 border rounded cursor-pointer bg-transparent"
+                  onChange={(e) =>
+                    setTagInput((prev) => ({ ...prev, color: e.target.value }))
+                  }
+                  className="h-9 w-9 p-0 border rounded cursor-pointer bg-transparent disabled:opacity-50"
+                  disabled={isSaving}
                 />
                 <Button
                   type="button"
                   variant={canAddTag ? "default" : "outline"}
                   onClick={handleAddTag}
-                  disabled={!canAddTag}
+                  disabled={!canAddTag || isSaving}
                 >
                   <Plus className="h-4 w-4 mr-1" />
                   Adicionar tag
@@ -750,7 +829,8 @@ export default function Activities() {
                       <button
                         type="button"
                         onClick={() => handleRemoveTag(tag.id)}
-                        className="text-[12px] leading-none"
+                        className="text-[12px] leading-none disabled:opacity-50"
+                        disabled={isSaving}
                       >
                         ×
                       </button>
@@ -765,7 +845,10 @@ export default function Activities() {
                 <Label htmlFor="category">Categoria *</Label>
                 <Select
                   value={formData.category}
-                  onValueChange={(value) => setFormData({ ...formData, category: value as ActivityCategory })}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, category: value as ActivityCategory })
+                  }
+                  disabled={isSaving}
                   required
                 >
                   <SelectTrigger className="w-full">
@@ -785,7 +868,10 @@ export default function Activities() {
                 <Label htmlFor="status">Status *</Label>
                 <Select
                   value={formData.status}
-                  onValueChange={(value) => setFormData({ ...formData, status: value as ActivityStatus })}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, status: value as ActivityStatus })
+                  }
+                  disabled={isSaving}
                   required
                 >
                   <SelectTrigger className="w-full">
@@ -806,7 +892,10 @@ export default function Activities() {
                 <Label htmlFor="priority">Prioridade *</Label>
                 <Select
                   value={formData.priority}
-                  onValueChange={(value) => setFormData({ ...formData, priority: value as ActivityPriority })}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, priority: value as ActivityPriority })
+                  }
+                  disabled={isSaving}
                   required
                 >
                   <SelectTrigger className="w-full">
@@ -828,16 +917,23 @@ export default function Activities() {
                   value={formData.dueDate}
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                   required
+                  disabled={isSaving}
                 />
               </div>
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={handleCloseDialog}>
+              <Button type="button" variant="outline" onClick={handleCloseDialog} disabled={isSaving}>
                 Cancelar
               </Button>
-              <Button type="submit">
-                {editingActivity ? "Salvar Alterações" : "Criar Atividade"}
+              <Button type="submit" disabled={isSaving}>
+                {isSaving
+                  ? editingActivity
+                    ? "SALVANDO..."
+                    : "CRIANDO..."
+                  : editingActivity
+                  ? "Salvar Alterações"
+                  : "Criar Atividade"}
               </Button>
             </DialogFooter>
           </form>
