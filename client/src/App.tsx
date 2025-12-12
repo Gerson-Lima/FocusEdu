@@ -11,6 +11,8 @@ import Dashboard from "./pages/Dashboard";
 import Activities from "./pages/Activities";
 import Kanban from "./pages/Kanban";
 import History from "./pages/History";
+import Security from "./pages/user/Security";
+import Profile from "./pages/user/Profile";
 
 function Router() {
   return (
@@ -24,7 +26,9 @@ function Router() {
       <Route path="/activities" component={Activities} />
       <Route path="/kanban" component={Kanban} />
       <Route path="/history" component={History} />
+      <Route path="/security" component={Security} />
       <Route path="/404" component={NotFound} />
+      <Route path="/profile" component={Profile} />
 
       {/* catch-all: qualquer rota desconhecida vai pro 404 */}
       <Route component={NotFound} />
