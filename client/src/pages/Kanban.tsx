@@ -55,10 +55,6 @@ import type {
 } from "@/types/firebase";
 import { format } from "date-fns";
 
-/* --------------------------------------------------------------------- */
-/* CONSTS / HELPERS                                                      */
-/* --------------------------------------------------------------------- */
-
 const DEFAULT_COLUMNS_TITLES = ["por fazer", "em andamento", "concluído", "em atraso"];
 
 function isDefaultColumnTitle(title: string) {
@@ -104,15 +100,10 @@ function getDisciplineLabel(value?: string): string {
   return value;
 }
 
-// evita shift de timezone no input date (salva no meio-dia)
 function buildLocalDateTimestamp(dateStr: string): number {
   const [year, month, day] = dateStr.split("-").map(Number);
   return new Date(year, month - 1, day, 12, 0, 0, 0).getTime();
 }
-
-/* --------------------------------------------------------------------- */
-/* CARD                                                                  */
-/* --------------------------------------------------------------------- */
 
 interface KanbanCardProps {
   activity: Activity;
@@ -212,10 +203,6 @@ function KanbanCard({ activity, courseName, onClick, isOverlay = false }: Kanban
     </div>
   );
 }
-
-/* --------------------------------------------------------------------- */
-/* COLUNA                                                                */
-/* --------------------------------------------------------------------- */
 
 function KanbanColumnOverlay({
   column,
@@ -333,10 +320,6 @@ function KanbanColumnComponent({
   );
 }
 
-/* --------------------------------------------------------------------- */
-/* PAGE                                                                  */
-/* --------------------------------------------------------------------- */
-
 export default function Kanban() {
   const { currentUser } = useFirebaseAuth();
   const { activities, courses, loading, refreshData: refreshActivities } = useActivities();
@@ -412,7 +395,7 @@ export default function Kanban() {
             setColumnOrder(Array.from(new Set(parsed)));
           }
         } catch {
-          // ignore malformed localStorage
+
         }
       }
     } catch {}
@@ -450,7 +433,6 @@ export default function Kanban() {
     localStorage.setItem("focusedu_hidden_kanban_columns", JSON.stringify(hiddenColumns));
   }, [hiddenColumns]);
 
-  // mantém a lista de ordem sincronizada com as colunas existentes
   useEffect(() => {
     if (!isColumnOrderHydrated) return;
 
@@ -502,10 +484,6 @@ export default function Kanban() {
     return grouped;
   }, [kanbanColumns, kanbanItems, filteredActivities]);
 
-  /* ------------------------------------------------------------------- */
-  /* AUTO-CREATE KANBAN ITEMS (sem duplicar / sem loop)                    */
-  /* ------------------------------------------------------------------- */
-
   const processedActivitiesRef = useRef<Set<string>>(new Set());
   const isCreatingItemsRef = useRef(false);
 
@@ -536,7 +514,6 @@ export default function Kanban() {
         for (let i = 0; i < newActivities.length; i++) {
           const activity = newActivities[i];
 
-          // double-check
           if (existingActivityIds.has(activity.id)) {
             processedActivitiesRef.current.delete(activity.id);
             continue;
@@ -568,10 +545,6 @@ export default function Kanban() {
     processedActivitiesRef.current.clear();
     isCreatingItemsRef.current = false;
   }, [currentUser?.uid]);
-
-  /* ------------------------------------------------------------------- */
-  /* DND                                                                  */
-  /* ------------------------------------------------------------------- */
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -608,7 +581,6 @@ export default function Kanban() {
       return;
     }
 
-    // 2) drag de CARD (persistir no Firebase)
     if (!currentUser) return;
 
     const draggedActivity = activities.find((a) => a.id === activeId);
@@ -650,10 +622,6 @@ export default function Kanban() {
     refreshActivities();
   };
 
-  /* ------------------------------------------------------------------- */
-  /* CRUD: COLUNA                                                         */
-  /* ------------------------------------------------------------------- */
-
   const handleAddColumn = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -669,7 +637,6 @@ export default function Kanban() {
         order: kanbanColumns.length,
       });
 
-      // se o service retornar o id, já coloca no order (senão, o useEffect de sync resolve)
       if (typeof maybeId === "string" && maybeId) {
         setColumnOrder((prev) => {
           if (prev.includes(maybeId)) {
