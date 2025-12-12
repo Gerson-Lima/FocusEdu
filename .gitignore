@@ -13,6 +13,7 @@ build/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.backup
 
 # Firebase Service Account keys (NEVER commit these!)
 *-firebase-adminsdk-*.json
