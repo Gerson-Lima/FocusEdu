@@ -70,6 +70,7 @@ function findColumnIdForStatus(columns: KanbanColumn[], status: ActivityStatus):
 }
 
 async function syncKanbanItemToStatus(userId: string, activityId: string, status: ActivityStatus) {
+  console.debug('syncKanbanItemToStatus start', { userId, activityId, status });
   const colsSnap = await getDocs(query((await import('@/lib/firebaseServices')).kanbanColumnsCollection, where('userId', '==', userId)));
   let targetColumnId: string | undefined;
   colsSnap.forEach((d) => {
@@ -84,10 +85,12 @@ async function syncKanbanItemToStatus(userId: string, activityId: string, status
 
   if (!itemsSnap.empty) {
     const docId = itemsSnap.docs[0].id;
+    console.debug('syncKanbanItemToStatus updating existing item', { docId, targetColumnId });
     await fbUpdateKanbanItem(docId, { columnId: targetColumnId });
   } else {
     const columnItemsSnap = await getDocs(query((await import('@/lib/firebaseServices')).kanbanItemsCollection, where('userId', '==', userId), where('columnId', '==', targetColumnId)));
     const order = columnItemsSnap.size;
+    console.debug('syncKanbanItemToStatus creating new item', { userId, targetColumnId, activityId, order });
     await fbCreateKanbanItem({ userId, columnId: targetColumnId, activityId, order });
   }
 }
@@ -113,8 +116,7 @@ export function useActivities() {
         const normalizedStatus = normalizeStatusByDueDate(a.status, a.dueDate);
         if (normalizedStatus !== a.status) {
           try { await fbUpdateActivity(a.id, { status: normalizedStatus }); } catch (e) { /* ignore */ }
-          await syncKanbanItemToStatus(currentUser.uid, a.id, normalizedStatus);
-        } else {
+          // Only sync kanban when status actually changed to avoid overwriting custom column placements
           await syncKanbanItemToStatus(currentUser.uid, a.id, normalizedStatus);
         }
       }
@@ -140,8 +142,7 @@ export function useActivities() {
             const normalized = normalizeStatusByDueDate(a.status, a.dueDate);
             if (normalized !== a.status) {
               fbUpdateActivity(a.id, { status: normalized }).catch(() => {});
-              syncKanbanItemToStatus(currentUser.uid, a.id, normalized).catch(() => {});
-            } else {
+              // Only sync when status changed
               syncKanbanItemToStatus(currentUser.uid, a.id, normalized).catch(() => {});
             }
           });
