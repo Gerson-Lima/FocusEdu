@@ -27,94 +27,48 @@ export const kanbanItemsCollection = collection(db, 'kanban_items');
 
 // Subscribe to user activities in real-time
 export function subscribeToActivities(userId: string, callback: (activities: Activity[]) => void) {
-  try {
-    // Try with orderBy first
-    const q = query(activityCollection, where('userId', '==', userId), orderBy('createdAt', 'desc'));
-    
-    return onSnapshot(q, 
-      (snapshot) => {
-        const activities: Activity[] = [];
-        snapshot.forEach((doc) => {
-          activities.push({ id: doc.id, ...doc.data() } as Activity);
-        });
-        callback(activities);
-      },
-      (error) => {
-        console.error('Error subscribing to activities:', error);
-        // If index is missing, use fallback query without orderBy
-        if (error.code === 'failed-precondition') {
-          console.warn('Index missing, using fallback query without orderBy');
-          const fallbackQ = query(activityCollection, where('userId', '==', userId));
-          const unsubscribe = onSnapshot(fallbackQ, (snapshot) => {
-            const activities: Activity[] = [];
-            snapshot.forEach((doc) => {
-              activities.push({ id: doc.id, ...doc.data() } as Activity);
-            });
-            // Sort manually
-            activities.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-            callback(activities);
-          }, (fallbackError) => {
-            console.error('Fallback query also failed:', fallbackError);
-            callback([]);
-          });
-          return unsubscribe;
-        }
-        // For other errors, just return empty callback
-        callback([]);
-        return () => {}; // Return empty unsubscribe function
-      }
-    );
-  } catch (error) {
-    console.error('Error setting up activities subscription:', error);
-    callback([]);
-    return () => {}; // Return empty unsubscribe function
-  }
+  // Use fallback query without orderBy to avoid index requirement
+  // This will work immediately and we'll sort manually
+  const fallbackQ = query(activityCollection, where('userId', '==', userId));
+  
+  return onSnapshot(fallbackQ, 
+    (snapshot) => {
+      const activities: Activity[] = [];
+      snapshot.forEach((doc) => {
+        activities.push({ id: doc.id, ...doc.data() } as Activity);
+      });
+      // Sort manually by createdAt descending
+      activities.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      callback(activities);
+    },
+    (error) => {
+      console.error('Error subscribing to activities:', error);
+      callback([]);
+    }
+  );
 }
 
 // Subscribe to user courses in real-time
 export function subscribeToCourses(userId: string, callback: (courses: Course[]) => void) {
-  try {
-    // Try with orderBy first
-    const q = query(coursesCollection, where('userId', '==', userId), orderBy('createdAt', 'desc'));
-    
-    return onSnapshot(q, 
-      (snapshot) => {
-        const courses: Course[] = [];
-        snapshot.forEach((doc) => {
-          courses.push({ id: doc.id, ...doc.data() } as Course);
-        });
-        callback(courses);
-      },
-      (error) => {
-        console.error('Error subscribing to courses:', error);
-        // If index is missing, use fallback query without orderBy
-        if (error.code === 'failed-precondition') {
-          console.warn('Index missing, using fallback query without orderBy');
-          const fallbackQ = query(coursesCollection, where('userId', '==', userId));
-          const unsubscribe = onSnapshot(fallbackQ, (snapshot) => {
-            const courses: Course[] = [];
-            snapshot.forEach((doc) => {
-              courses.push({ id: doc.id, ...doc.data() } as Course);
-            });
-            // Sort manually
-            courses.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-            callback(courses);
-          }, (fallbackError) => {
-            console.error('Fallback query also failed:', fallbackError);
-            callback([]);
-          });
-          return unsubscribe;
-        }
-        // For other errors, just return empty callback
-        callback([]);
-        return () => {}; // Return empty unsubscribe function
-      }
-    );
-  } catch (error) {
-    console.error('Error setting up courses subscription:', error);
-    callback([]);
-    return () => {}; // Return empty unsubscribe function
-  }
+  // Use fallback query without orderBy to avoid index requirement
+  // This will work immediately and we'll sort manually
+  const fallbackQ = query(coursesCollection, where('userId', '==', userId));
+  
+  return onSnapshot(fallbackQ, 
+    (snapshot) => {
+      const courses: Course[] = [];
+      snapshot.forEach((doc) => {
+        courses.push({ id: doc.id, ...doc.data() } as Course);
+      });
+      // Sort manually by createdAt descending
+      courses.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      callback(courses);
+    },
+    (error) => {
+      console.error('Error subscribing to courses:', error);
+      callback([]);
+    }
+  );
 }
 
 // Helper function to remove undefined values from an object

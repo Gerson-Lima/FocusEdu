@@ -56,6 +56,26 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && userId == request.auth.uid;
     }
     
+    // FCM Tokens collection
+    // Users can only read/write their own FCM token
+    // IMPORTANTE: O userId no documento DEVE corresponder ao request.auth.uid
+    match /fcm_tokens/{userId} {
+      allow read: if isAuthenticated() && userId == request.auth.uid;
+      allow create: if isAuthenticated() && userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && userId == request.auth.uid;
+    }
+    
+    // Sent Email Notifications collection
+    // Used by server-side code to track which activities have already received email notifications
+    // Users can read their own notification records (for debugging)
+    // Only server can write (via Firebase Admin SDK)
+    match /sent_email_notifications/{notificationId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Server-side writes only (no client-side writes allowed)
+      allow write: if false;
+    }
+    
     // Deny all other access
     match /{document=**} {
       allow read, write: if false;
