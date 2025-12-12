@@ -220,7 +220,7 @@ export default function Header({ className }: HeaderProps) {
                         Ativado
                       </Badge>
                     </div>
-                    <p>Você receberá notificações sobre atividades próximas do prazo.</p>
+                    <p>Você receberá notificações sobre atividades próximas do prazo no <b>seu e-mail</b>.</p>
                     <p className="text-xs mt-2">As notificações são verificadas automaticamente ao entrar na página.</p>
                   </div>
                 </>

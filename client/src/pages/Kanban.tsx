@@ -24,6 +24,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription as AlertDialogDesc,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 import { toast } from "sonner";
 import { Plus, X, Trash2 } from "lucide-react";
 
@@ -378,6 +389,14 @@ export default function Kanban() {
   const [columnOrder, setColumnOrder] = useState<string[]>([]);
   const [isColumnOrderHydrated, setIsColumnOrderHydrated] = useState(false);
 
+  // CONFIRMAÇÕES BONITAS (sem confirm/alert do browser)
+  const [deleteColumnOpen, setDeleteColumnOpen] = useState(false);
+  const [deleteColumnId, setDeleteColumnId] = useState<string | null>(null);
+  const [isDeletingColumn, setIsDeletingColumn] = useState(false);
+
+  const [deleteActivityOpen, setDeleteActivityOpen] = useState(false);
+  const [isDeletingActivity, setIsDeletingActivity] = useState(false);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
@@ -394,9 +413,7 @@ export default function Kanban() {
           if (Array.isArray(parsed)) {
             setColumnOrder(Array.from(new Set(parsed)));
           }
-        } catch {
-
-        }
+        } catch {}
       }
     } catch {}
     setIsColumnOrderHydrated(true);
@@ -546,6 +563,15 @@ export default function Kanban() {
     isCreatingItemsRef.current = false;
   }, [currentUser?.uid]);
 
+  const getPorFazerColumn = () => {
+    return (
+      kanbanColumns.find((c) => c.title.toLowerCase().includes("por fazer")) ||
+      kanbanColumns.find((c) => c.title.toLowerCase() === "por fazer") ||
+      kanbanColumns[0] ||
+      null
+    );
+  };
+
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
   };
@@ -639,9 +665,7 @@ export default function Kanban() {
 
       if (typeof maybeId === "string" && maybeId) {
         setColumnOrder((prev) => {
-          if (prev.includes(maybeId)) {
-            return prev;
-          }
+          if (prev.includes(maybeId)) return prev;
           const updated = [...prev, maybeId];
           if (typeof window !== "undefined") {
             localStorage.setItem("focusedu_kanban_column_order", JSON.stringify(updated));
@@ -660,7 +684,8 @@ export default function Kanban() {
     }
   };
 
-  const handleDeleteColumn = async (columnId: string) => {
+  // ABRE o confirm bonitinho (não usa confirm do browser)
+  const handleDeleteColumn = (columnId: string) => {
     const column = kanbanColumns.find((c) => c.id === columnId);
     if (!column) return;
 
@@ -669,20 +694,70 @@ export default function Kanban() {
       return;
     }
 
-    if (!confirm(`Tem certeza que deseja apagar a coluna "${column.title}"?`)) return;
+    setDeleteColumnId(columnId);
+    setDeleteColumnOpen(true);
+  };
+
+  // CONFIRMA: fecha modal na hora + executa async
+  const handleConfirmDeleteColumn = async () => {
+    if (!deleteColumnId || !currentUser) return;
+
+    const columnId = deleteColumnId; // snapshot
+    const column = kanbanColumns.find((c) => c.id === columnId);
+    if (!column) return;
+
+    const destination = getPorFazerColumn();
+    if (!destination) {
+      toast.error('Não foi possível localizar a coluna "Por fazer".');
+      return;
+    }
 
     try {
-      // apaga itens da coluna
-      const itemsInColumn = kanbanItems.filter((item) => item.columnId === columnId);
-      for (const item of itemsInColumn) {
-        await activitiesService.deleteKanbanItem(item.id);
+      // Move os cards (items) para "Por fazer" (não apaga os itens)
+      const itemsInColumn = kanbanItems
+        .filter((item) => item.columnId === columnId)
+        .sort((a, b) => a.order - b.order);
+
+      const destinationItems = kanbanItems
+        .filter((i) => i.columnId === destination.id)
+        .sort((a, b) => a.order - b.order);
+
+      const baseOrder = destinationItems.length;
+
+      for (let i = 0; i < itemsInColumn.length; i++) {
+        const item = itemsInColumn[i]!;
+        await activitiesService.updateKanbanItem(item.id, {
+          columnId: destination.id,
+          order: baseOrder + i,
+        });
+
+        // Se quiser manter o status coerente com a coluna de destino:
+        const activity = activities.find((a) => a.id === item.activityId);
+        if (activity) {
+          const destStatus = STATUS_MAP[destination.title] ?? "nao_iniciada";
+          const updates: Partial<Activity> = { status: destStatus };
+
+          if (destStatus === "concluida" && !activity.completedAt) {
+            updates.completedAt = Date.now();
+          }
+          if (destStatus !== "concluida" && activity.completedAt) {
+            updates.completedAt = undefined;
+          }
+
+          await activitiesService.updateActivity(activity.id, updates);
+        }
       }
 
-      // apaga coluna
-      const { deleteKanbanColumn } = await import("@/lib/firebaseServices");
-      await deleteKanbanColumn(columnId);
+      // Apaga coluna
+      const svc: any = activitiesService as any;
+      if (typeof svc.deleteKanbanColumn === "function") {
+        await svc.deleteKanbanColumn(columnId);
+      } else {
+        const { deleteKanbanColumn } = await import("@/lib/firebaseServices");
+        await deleteKanbanColumn(columnId);
+      }
 
-      // remove de ordem local
+      // Remove de ordem local
       setColumnOrder((prev) => {
         const next = prev.filter((id) => id !== columnId);
         if (typeof window !== "undefined") {
@@ -694,16 +769,19 @@ export default function Kanban() {
       // (opcional) garante sumiço imediato
       setHiddenColumns((prev) => (prev.includes(columnId) ? prev : [...prev, columnId]));
 
-      toast.success("Coluna apagada com sucesso!");
+      toast.success(`Coluna apagada. Cards movidos para "${destination.title}".`);
       refreshKanban();
+      refreshActivities();
     } catch (error) {
       console.error("Erro ao apagar coluna:", error);
       toast.error("Erro ao apagar coluna");
+    } finally {
+      setDeleteColumnId(null);
     }
   };
 
   /* ------------------------------------------------------------------- */
-  /* CRUD: CARD / ACTIVITY                                                 */
+  /* CRUD: CARD / ACTIVITY                                                */
   /* ------------------------------------------------------------------- */
 
   const handleAddCard = (columnId: string) => {
@@ -816,13 +894,14 @@ export default function Kanban() {
     }
   };
 
-  const handleDeleteActivityFromModal = async () => {
+  const handleDeleteActivityConfirmed = async () => {
     if (!editingActivity) return;
-    if (!confirm("Tem certeza que deseja excluir esta atividade?")) return;
+
+    const activityId = editingActivity.id; // snapshot
 
     try {
       // apaga itens kanban ligados
-      const linkedItems = kanbanItems.filter((i) => i.activityId === editingActivity.id);
+      const linkedItems = kanbanItems.filter((i) => i.activityId === activityId);
       for (const item of linkedItems) {
         await activitiesService.deleteKanbanItem(item.id);
       }
@@ -830,20 +909,20 @@ export default function Kanban() {
       // apaga atividade (via service se existir; senão via firebaseServices)
       const svc: any = activitiesService as any;
       if (typeof svc.deleteActivity === "function") {
-        await svc.deleteActivity(editingActivity.id);
+        await svc.deleteActivity(activityId);
       } else {
         const { deleteActivity } = await import("@/lib/firebaseServices");
-        await deleteActivity(editingActivity.id);
+        await deleteActivity(activityId);
       }
 
       toast.success("Atividade excluída com sucesso!");
-      setIsEditDialogOpen(false);
-      setEditingActivity(null);
       refreshActivities();
       refreshKanban();
     } catch (error) {
       console.error("Erro ao excluir atividade:", error);
       toast.error("Erro ao excluir atividade");
+    } finally {
+      setEditingActivity(null);
     }
   };
 
@@ -892,6 +971,23 @@ export default function Kanban() {
 
   const canAddNewTag = !!newTagInput.label.trim();
   const canAddEditTag = !!editTagInput.label.trim();
+
+  // Preview para o modal de deletar coluna
+  const deleteColumnInfo = useMemo(() => {
+    if (!deleteColumnId) return null;
+    const col = kanbanColumns.find((c) => c.id === deleteColumnId);
+    if (!col) return null;
+
+    const acts = activitiesByColumn[deleteColumnId] || [];
+    const destination = getPorFazerColumn();
+
+    return {
+      title: col.title,
+      count: acts.length,
+      exampleTitles: acts.slice(0, 5).map((a) => a.title),
+      destinationTitle: destination?.title ?? "Por fazer",
+    };
+  }, [deleteColumnId, kanbanColumns, activitiesByColumn]);
 
   if (loading) {
     return (
@@ -981,12 +1077,7 @@ export default function Kanban() {
               <DragOverlay dropAnimation={null}>
                 {activeActivity && (
                   <div className="rotate-3">
-                    <KanbanCard
-                      activity={activeActivity}
-                      courseName={activeActivity.courseName}
-                      onClick={() => {}}
-                      isOverlay
-                    />
+                    <KanbanCard activity={activeActivity} courseName={activeActivity.courseName} onClick={() => {}} isOverlay />
                   </div>
                 )}
                 {!activeActivity && activeColumn && (
@@ -1004,8 +1095,7 @@ export default function Kanban() {
               <Card>
                 <CardContent className="py-12 text-center text-muted-foreground">
                   <p>
-                    Nenhuma atividade cadastrada para a disciplina "
-                    {getDisciplineLabel(selectedDiscipline)}".
+                    Nenhuma atividade cadastrada para a disciplina "{getDisciplineLabel(selectedDiscipline)}".
                   </p>
                   <p className="mt-2">
                     Crie atividades na página "Minhas Atividades" ou use o botão "Adicionar card" nas colunas.
@@ -1016,6 +1106,67 @@ export default function Kanban() {
           </>
         )}
       </div>
+
+      {/* ALERT: APAGAR COLUNA (BONITO, SEM confirm DO BROWSER) */}
+      <AlertDialog open={deleteColumnOpen} onOpenChange={setDeleteColumnOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apagar coluna</AlertDialogTitle>
+            <AlertDialogDesc>
+              {deleteColumnInfo ? (
+                <div className="space-y-3">
+                  <div>
+                    Esta coluna possui <b>{deleteColumnInfo.count}</b> card(s).<br />
+                    Ao excluir a coluna <b>"{deleteColumnInfo.title}"</b>, os cards serão movidos para{" "}
+                    <b>"{deleteColumnInfo.destinationTitle}"</b>.
+                  </div>
+
+                  {deleteColumnInfo.exampleTitles.length > 0 && (
+                    <div>
+                      <div className="text-sm font-medium mb-1">Exemplos:</div>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {deleteColumnInfo.exampleTitles.map((t) => (
+                          <li key={t} className="text-sm">
+                            {t}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="text-sm">Deseja continuar?</div>
+                </div>
+              ) : (
+                "Deseja continuar?"
+              )}
+            </AlertDialogDesc>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingColumn}>Cancelar</AlertDialogCancel>
+
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              disabled={isDeletingColumn}
+              onClick={() => {
+                // FECHA NA HORA pra não ficar “modal vazio”
+                setDeleteColumnOpen(false);
+
+                (async () => {
+                  setIsDeletingColumn(true);
+                  try {
+                    await handleConfirmDeleteColumn();
+                  } finally {
+                    setIsDeletingColumn(false);
+                  }
+                })();
+              }}
+            >
+              {isDeletingColumn ? "Excluindo..." : "Excluir coluna"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* MODAL: NOVO CARD */}
       <Dialog open={isAddCardDialogOpen} onOpenChange={setIsAddCardDialogOpen}>
@@ -1354,7 +1505,7 @@ export default function Kanban() {
                 type="button"
                 variant="ghost"
                 className="text-red-600 hover:text-red-700"
-                onClick={handleDeleteActivityFromModal}
+                onClick={() => setDeleteActivityOpen(true)}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Excluir atividade
@@ -1370,6 +1521,44 @@ export default function Kanban() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* ALERT: APAGAR ATIVIDADE (fecha na hora, sem “modal vazio”) */}
+      <AlertDialog open={deleteActivityOpen} onOpenChange={setDeleteActivityOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir atividade</AlertDialogTitle>
+            <AlertDialogDesc>
+              Tem certeza que deseja excluir esta atividade?
+              <br />
+              Esta ação é irreversível.
+            </AlertDialogDesc>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingActivity}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              disabled={isDeletingActivity}
+              onClick={() => {
+                // fecha tudo na hora
+                setDeleteActivityOpen(false);
+                setIsEditDialogOpen(false);
+
+                (async () => {
+                  setIsDeletingActivity(true);
+                  try {
+                    await handleDeleteActivityConfirmed();
+                  } finally {
+                    setIsDeletingActivity(false);
+                  }
+                })();
+              }}
+            >
+              {isDeletingActivity ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 }
