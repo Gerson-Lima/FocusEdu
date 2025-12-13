@@ -39,11 +39,11 @@ export default function Header({ className }: HeaderProps) {
   const { permission, isSupported, requestPermission, isLoading, notifications, removeNotification } = useNotifications();
   const testNotificationMutation = trpc.notifications.test.useMutation();
 
-  // Verifica notificações automaticamente ao carregar/recarregar a página
+  // Verifica notificações automaticamente a cada 10 segundos
   useEffect(() => {
     if (permission === 'granted') {
-      // Aguarda um pouco para garantir que tudo está inicializado
-      const timer = setTimeout(() => {
+      // Função para verificar notificações
+      const checkNotifications = () => {
         testNotificationMutation.mutate(undefined, {
           onSuccess: (response) => {
             const result = response?.json || response;
@@ -55,11 +55,24 @@ export default function Header({ className }: HeaderProps) {
             console.error('[Header] Erro ao verificar notificações automaticamente:', error);
           },
         });
-      }, 2000); // Aguarda 2 segundos após o carregamento
+      };
 
-      return () => clearTimeout(timer);
+      // Executa imediatamente após um pequeno delay para garantir inicialização
+      const initialTimer = setTimeout(() => {
+        checkNotifications();
+      }, 2000);
+
+      // Configura intervalo para executar a cada 10 segundos
+      const interval = setInterval(() => {
+        checkNotifications();
+      }, 10000); // 10 segundos
+
+      return () => {
+        clearTimeout(initialTimer);
+        clearInterval(interval);
+      };
     }
-  }, [permission]); // Executa sempre que a permissão mudar ou a página carregar
+  }, [permission]); // Executa sempre que a permissão mudar
 
   const handleLogout = async () => {
     try {
@@ -221,7 +234,7 @@ export default function Header({ className }: HeaderProps) {
                       </Badge>
                     </div>
                     <p>Você receberá notificações sobre atividades próximas do prazo no <b>seu e-mail</b>.</p>
-                    <p className="text-xs mt-2">As notificações são verificadas automaticamente ao entrar na página.</p>
+                    <p className="text-xs mt-2">As notificações são verificadas automaticamente a cada 10 segundos.</p>
                   </div>
                 </>
               ) : permission === 'denied' ? (
