@@ -93,7 +93,7 @@ describe("BlockSignUp Component", () => {
     expect(mockSetLocation).toHaveBeenCalledWith("/dashboard");
   });
 
-  test("Deve exibir erro quando signUp falha", async () => {
+  test("Deve exibir erro genérico quando signUp falha", async () => {
     (signUp as Mock).mockRejectedValue(new Error("Erro"));
 
     render(<BlockSignUp />);
@@ -116,5 +116,117 @@ describe("BlockSignUp Component", () => {
 
     expect(await screen.findByText("Erro ao criar conta"))
       .toBeInTheDocument();
+  });
+
+  // 🔽 NOVOS TESTES — cobertura das linhas 41–50 🔽
+
+  test("Deve exibir erro para senha fraca (auth/weak-password)", async () => {
+    (signUp as Mock).mockRejectedValue({ code: "auth/weak-password" });
+
+    render(<BlockSignUp />);
+
+    fireEvent.change(screen.getByPlaceholderText("Ex.: João"), {
+      target: { value: "João" }
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("exemplo@email.com"), {
+      target: { value: "teste@email.com" }
+    });
+
+    const pwdFields = screen.getAllByPlaceholderText("••••••••••••");
+    fireEvent.change(pwdFields[0], { target: { value: "123" } });
+    fireEvent.change(pwdFields[1], { target: { value: "123" } });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /criar conta/i })
+    );
+
+    expect(
+      await screen.findByText("Senha precisa ter no mínimo 6 caracteres")
+    ).toBeInTheDocument();
+  });
+
+  test("Deve exibir erro para e-mail já em uso (auth/email-already-in-use)", async () => {
+    (signUp as Mock).mockRejectedValue({
+      code: "auth/email-already-in-use"
+    });
+
+    render(<BlockSignUp />);
+
+    fireEvent.change(screen.getByPlaceholderText("Ex.: João"), {
+      target: { value: "João" }
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("exemplo@email.com"), {
+      target: { value: "teste@email.com" }
+    });
+
+    const pwdFields = screen.getAllByPlaceholderText("••••••••••••");
+    fireEvent.change(pwdFields[0], { target: { value: "123456" } });
+    fireEvent.change(pwdFields[1], { target: { value: "123456" } });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /criar conta/i })
+    );
+
+    expect(
+      await screen.findByText("Este e-mail já está em uso")
+    ).toBeInTheDocument();
+  });
+
+  test("Deve exibir erro para e-mail inválido (auth/invalid-email)", async () => {
+    (signUp as Mock).mockRejectedValue({
+      code: "auth/invalid-email"
+    });
+
+    render(<BlockSignUp />);
+
+    fireEvent.change(screen.getByPlaceholderText("Ex.: João"), {
+      target: { value: "João" }
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("exemplo@email.com"), {
+      target: { value: "email-invalido" }
+    });
+
+    const pwdFields = screen.getAllByPlaceholderText("••••••••••••");
+    fireEvent.change(pwdFields[0], { target: { value: "123456" } });
+    fireEvent.change(pwdFields[1], { target: { value: "123456" } });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /criar conta/i })
+    );
+
+    expect(
+      await screen.findByText("E-mail inválido")
+    ).toBeInTheDocument();
+  });
+
+  test("Deve cair no default para erro desconhecido", async () => {
+    (signUp as Mock).mockRejectedValue({
+      code: "auth/unknown-error"
+    });
+
+    render(<BlockSignUp />);
+
+    fireEvent.change(screen.getByPlaceholderText("Ex.: João"), {
+      target: { value: "João" }
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("exemplo@email.com"), {
+      target: { value: "teste@email.com" }
+    });
+
+    const pwdFields = screen.getAllByPlaceholderText("••••••••••••");
+    fireEvent.change(pwdFields[0], { target: { value: "123456" } });
+    fireEvent.change(pwdFields[1], { target: { value: "123456" } });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /criar conta/i })
+    );
+
+    expect(
+      await screen.findByText("Erro ao criar conta")
+    ).toBeInTheDocument();
   });
 });

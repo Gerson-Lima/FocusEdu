@@ -6,7 +6,7 @@ import { signUp } from "../../services/auth";
 export default function BlockSignUp() {
   const [, setLocation] = useLocation();
 
-  const [name, setName] = useState(""); 
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -35,7 +35,24 @@ export default function BlockSignUp() {
       setLocation("/dashboard");
     } catch (err: any) {
       console.error(err);
-      setError("Erro ao criar conta");
+
+      switch (err.code) {
+        case "auth/weak-password":
+          setError("Senha precisa ter no mínimo 6 caracteres");
+          break;
+
+        case "auth/email-already-in-use":
+          setError("Este e-mail já está em uso");
+          break;
+
+        case "auth/invalid-email":
+          setError("E-mail inválido");
+          break;
+
+        default:
+          setError("Erro ao criar conta");
+          break;
+      }
     } finally {
       setLoading(false);
     }
@@ -43,7 +60,9 @@ export default function BlockSignUp() {
 
   return (
     <div className="flex w-full flex-col items-center gap-4 justify-center">
-      <h1 className="text-[24px] text-[var(--primary)] font-bold">Criar conta</h1>
+      <h1 className="text-[24px] text-[var(--primary)] font-bold">
+        Criar conta
+      </h1>
 
       {/* Campo Nome */}
       <div className="w-full flex flex-col gap-1">
@@ -57,7 +76,7 @@ export default function BlockSignUp() {
           id="signup-name"
           placeholder="Ex.: João"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={e => setName(e.target.value)}
           className="
             w-full
             text-[16px]
@@ -85,7 +104,7 @@ export default function BlockSignUp() {
           id="signup-email"
           placeholder="exemplo@email.com"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={e => setEmail(e.target.value)}
           className="
             w-full
             text-[16px]
@@ -114,7 +133,7 @@ export default function BlockSignUp() {
           placeholder="••••••••••••"
           type="password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={e => setPassword(e.target.value)}
           className="
             w-full
             text-[16px]
@@ -143,7 +162,7 @@ export default function BlockSignUp() {
           placeholder="••••••••••••"
           type="password"
           value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
+          onChange={e => setConfirmPassword(e.target.value)}
           className="
             w-full
             text-[16px]
@@ -178,9 +197,7 @@ export default function BlockSignUp() {
         {loading ? "Criando conta..." : "Criar conta"}
       </button>
 
-      {error && (
-        <p className="text-red-500 text-[14px]">{error}</p>
-      )}
+      {error && <p className="text-red-500 text-[14px]">{error}</p>}
     </div>
   );
 }

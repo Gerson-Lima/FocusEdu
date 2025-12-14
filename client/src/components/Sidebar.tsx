@@ -69,38 +69,36 @@ export default function Sidebar({ className }: SidebarProps) {
 
             return (
               <li key={item.path}>
-                <Link href={item.path}>
-                  <a
+                <Link
+                  href={item.path}
+                  className={cn(
+                    'relative flex items-center gap-3 px-6 py-5 rounded-lg transition-colors',
+                    'hover:bg-slate-800/60',
+                    collapsed && 'justify-center px-0',
+                    isActive ? 'text-white' : 'text-slate-400'
+                  )}
+                  title={collapsed ? item.label : undefined}
+                >
+                  {isActive && (
+                    <span className="absolute left-0 top-0 bottom-0 w-1.5 rounded-r-full bg-[#59D7F0]" />
+                  )}
+
+                  <Icon
                     className={cn(
-                      'relative flex items-center gap-3 px-6 py-5 rounded-lg transition-colors',
-                      'hover:bg-slate-800/60',
-                      collapsed && 'justify-center px-0',
+                      'h-5 w-5 flex-shrink-0',
                       isActive ? 'text-white' : 'text-slate-400'
                     )}
-                    title={collapsed ? item.label : undefined}
-                  >
-
-                    {isActive && (
-                      <span className="absolute left-0 top-0 bottom-0 w-1.5 rounded-r-full bg-[#59D7F0]" />
-                    )}
-
-                    <Icon
+                  />
+                  {!collapsed && (
+                    <span
                       className={cn(
-                        'h-5 w-5 flex-shrink-0',
-                        isActive ? 'text-white' : 'text-slate-400'
+                        'font-medium',
+                        isActive && 'text-white'
                       )}
-                    />
-                    {!collapsed && (
-                      <span
-                        className={cn(
-                          'font-medium',
-                          isActive && 'text-white'
-                        )}
-                      >
-                        {item.label}
-                      </span>
-                    )}
-                  </a>
+                    >
+                      {item.label}
+                    </span>
+                  )}
                 </Link>
               </li>
             );
