@@ -272,7 +272,7 @@ export default function Header({ className }: HeaderProps) {
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="min-w-[280px] max-w-[360px]">
               <DropdownMenuLabel
               className="cursor-pointer"
               onClick={() => setLocation('/profile')}
