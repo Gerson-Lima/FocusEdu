@@ -1,11 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-/**
- * IMPORTANTE (Vitest hoisting):
- * - vi.mock(...) é hoisted para o topo.
- * - Tudo que o factory do vi.mock usar precisa existir antes do hoist.
- * - Use vi.hoisted(() => ...) para criar mocks/objetos compartilhados com segurança.
- */
 const H = vi.hoisted(() => {
   return {
     authMock: { currentUser: null as any },
@@ -58,11 +52,7 @@ vi.mock("firebase/firestore", () => {
   };
 });
 
-/**
- * Ajuste o import do serviço conforme o local real do arquivo.
- * Pelo seu erro, o arquivo está em: client/src/pages/user/useUserServices.ts
- * Então, a partir de pages/Teste -> ../user/useUserServices
- */
+
 import {
   reauthenticateUser,
   requestEmailUpdate,

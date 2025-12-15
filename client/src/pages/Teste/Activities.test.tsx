@@ -3,7 +3,6 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, within, waitFor } from "@testing-library/react";
 
-// ✅ AJUSTE PARA O CAMINHO REAL DO COMPONENTE:
 import Activities from "../Activities";
 
 /* ------------------------------------------------------------------ */
@@ -571,15 +570,15 @@ describe("Activities - cobertura adicional (linhas vermelhas)", () => {
     expect(screen.getByLabelText(/Disciplina/i)).toHaveValue("Matemática");
   });
 
-  // ✅ CORRIGIDO: courseId precisa bater com o valor do filtro (que é "courseName || courseId")
+  
   it("filtra por Disciplina e Categoria (filters em cima)", async () => {
     activitiesState.activities = [
       {
         id: "a1",
         title: "Item BIO",
         description: "",
-        courseId: "Biologia",   // ✅ igual ao valor do select
-        courseName: "Biologia", // ✅ igual ao valor do select
+        courseId: "Biologia",   
+        courseName: "Biologia", 
         category: "prova",
         status: "pendente",
         dueDate: Date.now() + 100000,
@@ -590,8 +589,8 @@ describe("Activities - cobertura adicional (linhas vermelhas)", () => {
         id: "a2",
         title: "Item POR",
         description: "",
-        courseId: "Português",   // ✅ igual ao valor do select
-        courseName: "Português", // ✅ igual ao valor do select
+        courseId: "Português",   
+        courseName: "Português",
         category: "leitura",
         status: "pendente",
         dueDate: Date.now() + 100000,

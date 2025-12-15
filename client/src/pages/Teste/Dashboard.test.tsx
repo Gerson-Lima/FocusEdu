@@ -3,7 +3,6 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 
-// ✅ AJUSTE ESTE IMPORT CONFORME SEU CAMINHO REAL:
 import Dashboard from "@/pages/Dashboard";
 
 type Activity = {
@@ -106,7 +105,6 @@ vi.mock("recharts", () => ({
     <div data-testid="piechart">{children}</div>
   ),
 
-  // ✅ CORRIGIDO: executa label() para cobrir a linha do Dashboard
   Pie: ({
     data,
     children,
@@ -362,7 +360,6 @@ describe("Dashboard", () => {
 
     const card = getCardByTitle("Atividades Gerais");
 
-    // ✅ Agora o mock renderiza os labels (garante execução do callback label)
     const labels = within(card).getByTestId("pie-labels");
     expect(labels).toHaveTextContent("Concluídas: 50%");
     expect(labels).toHaveTextContent("Pendentes: 50%");
